@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AI Meeting Analyzer</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+    background: url("/static/webbg.png") no-repeat center center/cover;
+    color: white;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}   
+
+        .container {
+            text-align: center;
+        }
+
+        .box {
+            background: rgba(30, 41, 59, 0.8);
+            backdrop-filter: blur(12px);
+            padding: 40px;
+            border-radius: 16px;
+            width: 350px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+            transition: 0.3s;
+        }
+
+        .box:hover {
+            transform: translateY(-5px);
+        }
+
+        h1 {
+            margin-bottom: 20px;
+            font-size: 24px;
+            background: linear-gradient(90deg, #38bdf8, #6366f1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        input[type="file"] {
+            margin: 15px 0;
+            padding: 10px;
+            width: 100%;
+            border-radius: 8px;
+            border: none;
+            background: #020617;
+            color: white;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(90deg, #38bdf8, #6366f1);
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            color: white;
+            font-weight: bold;
+            transition: 0.3s;
+        }
+
+        button:hover {
+            opacity: 0.85;
+            transform: scale(1.02);
+        }
+
+        #loader {
+            display: none;
+            margin-top: 20px;
+        }
+
+        .spinner {
+            border: 4px solid #1e293b;
+            border-top: 4px solid #38bdf8;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            margin: 10px auto;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .status {
+            font-size: 14px;
+            color: #94a3b8;
+        }
+/* GEAR CONTAINER */
+.gears {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    z-index: 0;
+}
+
+/* COMMON GEAR STYLE */
+.gear {
+    position: absolute;
+    opacity: 0.;
+    animation: rotate 20s linear infinite, float 6s ease-in-out infinite;
+}
+
+/* INDIVIDUAL POSITIONS */
+.gear1 {
+    width: 120px;
+    top: 10%;
+    left: 15%;
+}
+
+.gear2 {
+    width: 1300px;
+    bottom:auto;
+    right: -30%;
+    animation-duration: 30s;
+}
+
+.gear3 {
+    width: 90px;
+    top: 60%;
+    left: 70%;
+    animation-duration: 25s;
+}
+
+/* ROTATION */
+@keyframes rotate {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* FLOATING EFFECT */
+@keyframes float {
+    0%, 100% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(-20px) rotate(180deg); }
+}
+    </style>
+
+    <script>
+        function showLoader() {
+            document.getElementById("loader").style.display = "block";
+        }
+    </script>
+</head>
+
+<body>
+    <div class="gears">
+    <img src="/static/gear.png" class="gear gear1">
+    <img src="/static/gear.png" class="gear gear2">
+    <img src="/static/gear.png" class="gear gear3">
+</div>
+    <div class="container">
+        <div class="box">
+            <h1>AI Meeting Analyzer 🚀</h1>
+
+            <form action="/process" method="post" enctype="multipart/form-data" onsubmit="showLoader()">
+                <input type="file" name="file" required>
+
+                <button type="submit">Upload & Process</button>
+            </form>
+
+            <div id="loader">
+                <div class="spinner"></div>
+                <p class="status">Uploading → Transcribing → Summarizing ⏳</p>
+            </div>
+        </div>
+    </div>
+
+
+
+</body>
+</html>

@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Results</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Segoe UI", sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #020617, #0f172a);
+            color: white;
+            padding: 30px;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 28px;
+            background: linear-gradient(90deg, #38bdf8, #6366f1);
+            /* -webkit-background-clip: text; */
+            /* -webkit-text-fill-color: transparent; */
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: auto;
+        }
+
+        .box {
+            background: rgba(30, 41, 59, 0.85);
+            backdrop-filter: blur(10px);
+            padding: 25px;
+            border-radius: 14px;
+            margin-bottom: 25px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+            transition: 0.3s;
+        }
+
+        .box:hover {
+            transform: translateY(-3px);
+        }
+
+        h2 {
+            margin-bottom: 10px;
+            color: #38bdf8;
+        }
+
+        p, pre {
+            background: #020617;
+            padding: 15px;
+            border-radius: 8px;
+            max-height: 250px;
+            overflow-y: auto;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        pre {
+            white-space: pre-wrap;
+        }
+
+        .actions {
+            margin-top: 12px;
+        }
+
+        button {
+            padding: 10px 16px;
+            border: none;
+            cursor: pointer;
+            margin-right: 10px;
+            border-radius: 8px;
+            font-weight: bold;
+            transition: 0.3s;
+        }
+
+        button:hover {
+            transform: scale(1.05);
+            opacity: 0.9;
+        }
+
+        .download {
+            background: linear-gradient(90deg, #22c55e, #16a34a);
+            color: white;
+        }
+
+        .quote {
+            background: linear-gradient(90deg, #f59e0b, #f97316);
+            color: white;
+        }
+
+        .copy {
+            background: linear-gradient(90deg, #38bdf8, #6366f1);
+            color: white;
+        }
+
+        .bottom-actions {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .bottom-actions form {
+            display: inline-block;
+            margin: 10px;
+        }
+
+        a {
+            display: inline-block;
+            margin-top: 30px;
+            color: #94a3b8;
+            text-decoration: none;
+        }
+
+        a:hover {
+            color: white;
+        }
+
+        /* Scrollbar Styling */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #38bdf8;
+            border-radius: 10px;
+        }
+    </style>
+
+    <script>
+        function copyText(text) {
+            navigator.clipboard.writeText(text);
+            alert("Copied!");
+        }
+    </script>
+
+</head>
+
+<body>
+
+    <h1>Meeting Analysis 📊</h1>
+
+    <div class="container">
+
+        <!-- Transcript -->
+        <div class="box">
+            <h2>Transcript</h2>
+            <p id="transcript">{{ transcript }}</p>
+
+            <div class="actions">
+                <button class="copy" onclick="copyText(`{{ transcript }}`)">Copy</button>
+            </div>
+        </div>
+
+        <!-- Summary -->
+        <div class="box">
+            <h2>MOM (Minutes-of-Meeting)</h2>
+            <pre id="summary">{{ summary }}</pre>
+
+            <div class="actions">
+                <button class="copy" onclick="copyText(`{{ summary }}`)">Copy</button>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="bottom-actions">
+
+            <!-- Download -->
+            <form action="/download">
+                <input type="hidden" name="summary" value="{{ summary }}">
+                <button class="download" type="submit">Download PDF 📄</button>
+            </form>
+
+            <!-- Quotation -->
+            <form action="/quotation" method="post">
+                <input type="hidden" name="requirement" value="{{ transcript }}">
+                <button class="quote" type="submit">Generate Quotation 💼</button>
+            </form>
+
+        </div>
+
+        <div style="text-align:center;">
+            <a href="/">⬅ Upload Another File</a>
+        </div>
+
+    </div>
+
+</body>
+</html>
