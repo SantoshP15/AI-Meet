@@ -4,7 +4,8 @@ import requests
 import os
 import sqlite3
 import pandas as pd
-from reportlab.platypus import SimpleDocTemplate, Paragraph
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Table, TableStyle, Spacer
+from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet
 from werkzeug.utils import secure_filename
 
@@ -54,12 +55,13 @@ def allowed_file(filename):
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
+
 def call_llm(prompt):
     try:
         response = requests.post(
             "http://localhost:11434/api/generate",
             json={"model": "llama3", "prompt": prompt, "stream": False},
-            timeout=60
+            timeout=200
         )
         return response.json().get("response", "No response from LLM")
     except Exception as e:
@@ -110,7 +112,99 @@ def calculate_cost(team, months=1, profit_margin=0.3):
     final_cost = int(base_cost * (1 + profit_margin))
     return base_cost, final_cost
 
+def parse_mom_sections(text):
+    sections = {
+        "agenda": "",
+        "discussion": "",
+        "actions": ""
+    }
 
+    current = None
+
+    for line in text.split("\n"):
+        line_lower = line.lower()
+
+        if "agenda" in line_lower:
+            current = "agenda"
+            continue
+        elif "discussion" in line_lower:
+            current = "discussion"
+            continue
+        elif "action" in line_lower:
+            current = "actions"
+            continue
+
+        if current:
+            sections[current] += line + " "
+
+    return sections
+
+def generate_mom_pdf(sections, attendees, file_path="summary.pdf"):
+    styles = getSampleStyleSheet()
+    doc = SimpleDocTemplate(file_path)
+
+    elements = []
+
+    # ===== HEADER =====
+    elements.append(Paragraph("<font size=26 color='orange'><b>Minutes</b></font>", styles["Title"]))
+    elements.append(Spacer(1, 10))
+
+    elements.append(Paragraph("<b>Meeting Title:</b> AI Generated Meeting", styles["Normal"]))
+    elements.append(Paragraph("<b>Date & Time:</b> Auto Generated", styles["Normal"]))
+    elements.append(Paragraph("<b>Location:</b> Virtual", styles["Normal"]))
+    elements.append(Spacer(1, 20))
+
+    # ===== GRID CONTENT =====
+    table_data = [
+        [
+           Paragraph("<b>Attendees</b><br/>" + "<br/>".join(attendees), styles["Normal"]),
+            Paragraph("<b>Agenda</b><br/>" + sections["agenda"], styles["Normal"])
+        ],
+        [
+            Paragraph("<b>Absentees</b><br/>-", styles["Normal"]),
+            Paragraph("<b>Discussion</b><br/>" + sections["discussion"], styles["Normal"])
+        ],
+        [
+            Paragraph("<b>Icebreaker</b><br/>-", styles["Normal"]),
+            Paragraph("<b>Shoutouts</b><br/>-", styles["Normal"])
+        ],
+        [
+            Paragraph("<b>Action Items</b><br/>" + sections["actions"], styles["Normal"]),
+            Paragraph("<b>Parking Lot</b><br/>-", styles["Normal"])
+        ],
+    ]
+
+    table = Table(table_data, colWidths=[270, 270])
+
+    table.setStyle(TableStyle([
+        ("GRID", (0, 0), (-1, -1), 1, colors.orange),
+        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+        ("LEFTPADDING", (0, 0), (-1, -1), 10),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 10),
+        ("TOPPADDING", (0, 0), (-1, -1), 10),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 10),
+    ]))
+
+    elements.append(table)
+
+    doc.build(elements)
+
+def detect_attendees_from_transcript(transcript):
+    employees = df["Name"].dropna().tolist()
+    transcript_lower = transcript.lower()
+
+    attendees = []
+
+    for emp in employees:
+        emp_parts = emp.lower().split()  # ["santosh", "patil"]
+
+        # Check if ANY part of name exists in transcript
+        for part in emp_parts:
+            if part in transcript_lower:
+                attendees.append(emp)
+                break  # avoid duplicate match
+
+    return list(set(attendees))  # remove duplicates
 # =========================
 # ROUTES
 # =========================
@@ -142,14 +236,27 @@ def process_audio():
 
         # Summary
         prompt = f"""
-        Generate a Minutes of meeting of the given Transcript
+Generate a structured Minutes of Meeting from the transcript.
 
-        Transcript:
-        {transcript}
-        """
+Return in this format:
+
+Agenda:
+...
+
+Discussion:
+...
+
+Action Items:
+...
+
+Transcript:
+{transcript}
+"""
 
         summary = call_llm(prompt)
-
+        sections = parse_mom_sections(summary)
+        attendees = detect_attendees_from_transcript(transcript)
+        print("Detected attendees:", attendees)
         # Save to DB
         conn = get_db()
         conn.execute(
@@ -159,8 +266,13 @@ def process_audio():
         conn.commit()
         conn.close()
 
-        return render_template("result.html", transcript=transcript, summary=summary)
-
+        return render_template(
+    "result.html",
+    transcript=transcript,
+    summary=summary,
+    attendees=attendees,
+    sections=sections
+)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -200,11 +312,11 @@ def download_pdf():
     summary = request.args.get("summary", "")
 
     file_path = "summary.pdf"
-    doc = SimpleDocTemplate(file_path)
-    styles = getSampleStyleSheet()
+    sections = parse_mom_sections(summary)
+    attendees = request.args.get("attendees", "")
+    attendees_list = attendees.split(",") if attendees else []
 
-    content = [Paragraph(summary, styles["Normal"])]
-    doc.build(content)
+    generate_mom_pdf(sections, attendees_list, file_path)
 
     return send_file(file_path, as_attachment=True)
 
