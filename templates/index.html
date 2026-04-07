@@ -160,14 +160,16 @@
     <img src="/static/gear.png" class="gear gear2">
     <img src="/static/gear.png" class="gear gear3">
 </div>
+
     <div class="container">
         <div class="box">
             <h1>AI Meeting Analyzer 🚀</h1>
 
             <form action="/process" method="post" enctype="multipart/form-data" onsubmit="showLoader()">
                 <input type="file" name="file" required>
-
+                
                 <button type="submit">Upload & Process</button>
+                
             </form>
 
             <div id="loader">
