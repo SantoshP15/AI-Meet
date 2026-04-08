@@ -2,6 +2,7 @@ from flask import Flask, request, render_template, send_file, jsonify
 import whisper
 import requests
 import os
+import re
 import sqlite3
 import pandas as pd
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Table, TableStyle, Spacer
@@ -88,6 +89,48 @@ def detect_roles(requirement):
 
     return list(set(roles))
 
+    
+
+def extract_timeline_from_transcript(transcript):
+    number_words = {
+    "one": "1",
+    "two": "2",
+    "three": "3",
+    "four": "4",
+    "five": "5",
+    "six": "6",
+    "seven": "7",
+    "eight": "8",
+    "nine": "9",
+    "ten": "10"
+}
+    text = transcript.lower()
+
+    # Convert word numbers → digits
+    for word, digit in number_words.items():
+        text = text.replace(word, digit)
+
+    timeline_keywords = [
+        "complete", "finish", "delivery", "timeline",
+        "deadline", "duration", "take", "done in"
+    ]
+
+    patterns = [
+        r'(\d+)\s*days?',
+        r'(\d+)\s*weeks?',
+        r'(\d+)\s*months?'
+    ]
+
+    for pattern in patterns:
+        for match in re.finditer(pattern, text):
+            start = match.start()
+
+            context = text[max(0, start-30):start]
+
+            if any(keyword in context for keyword in timeline_keywords):
+                return match.group(0)
+
+    return None
 
 def select_team(df, roles):
     team = []
@@ -139,7 +182,7 @@ def parse_mom_sections(text):
 
     return sections
 
-def generate_mom_pdf(sections, attendees, file_path="summary.pdf"):
+def generate_mom_pdf(sections, attendees, timeline, file_path="summary.pdf"):
     styles = getSampleStyleSheet()
     doc = SimpleDocTemplate(file_path)
 
@@ -148,7 +191,8 @@ def generate_mom_pdf(sections, attendees, file_path="summary.pdf"):
     # ===== HEADER =====
     elements.append(Paragraph("<font size=26 color='orange'><b>Minutes</b></font>", styles["Title"]))
     elements.append(Spacer(1, 10))
-
+    elements.append(Paragraph(f"<b>Timeline:</b> {timeline}", styles["Normal"]))
+    elements.append(Spacer(1, 15))
     elements.append(Paragraph("<b>Meeting Title:</b> AI Generated Meeting", styles["Normal"]))
     elements.append(Paragraph("<b>Date & Time:</b> Auto Generated", styles["Normal"]))
     elements.append(Paragraph("<b>Location:</b> Virtual", styles["Normal"]))
@@ -256,6 +300,9 @@ Transcript:
         summary = call_llm(prompt)
         sections = parse_mom_sections(summary)
         attendees = detect_attendees_from_transcript(transcript)
+        timeline = extract_timeline_from_transcript(transcript)
+        if not timeline:
+            timeline = "Not mentioned"
         print("Detected attendees:", attendees)
         # Save to DB
         conn = get_db()
@@ -271,7 +318,8 @@ Transcript:
     transcript=transcript,
     summary=summary,
     attendees=attendees,
-    sections=sections
+    sections=sections,
+    timeline=timeline
 )
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -315,8 +363,9 @@ def download_pdf():
     sections = parse_mom_sections(summary)
     attendees = request.args.get("attendees", "")
     attendees_list = attendees.split(",") if attendees else []
+    timeline = request.args.get("timeline", "Not mentioned")
 
-    generate_mom_pdf(sections, attendees_list, file_path)
+    generate_mom_pdf(sections, attendees_list, timeline, file_path)
 
     return send_file(file_path, as_attachment=True)
 
