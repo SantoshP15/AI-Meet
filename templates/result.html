@@ -175,12 +175,19 @@
             </div>
         </div>
 
+        <div class="box">
+            <h2>Timeline ⏳</h2>
+            <p>{{ timeline }}</p>
+        </div>
+
+
         <!-- Actions -->
         <div class="bottom-actions">
 
             <!-- Download -->
             <form action="/download">
     <input type="hidden" name="summary" value="{{ summary }}">
+    <input type="hidden" name="timeline" value="{{ timeline }}">
     <input type="hidden" name="attendees" value="{{ attendees | join(',') }}">
     <button class="download" type="submit">Download PDF 📄</button>
 </form>
